@@ -1,0 +1,17 @@
+plugin: community.vmware.vmware_vm_inventory
+strict: False
+validate_certs: False
+with_tags: True
+hostname: HOSTNAME
+username: USERNAME
+password: PASSWORD
+
+filters:
+  - "'PROJECT_NAME' in tag_category"
+
+keyed_groups:
+  - key: tags
+    separator: ""
+
+groups:
+  cluster: "'PROJECT_NAME' in tag_category"

@@ -1,0 +1,35 @@
+version: 0.1.0
+name: Nucleus
+
+vsphere:
+  endpoint: vcenter.example.com
+  insecure_connection: true
+  datacenter: Datacenter
+  cluster: Cluster1
+  network: VM Network
+  folder: Nucleus
+  template:
+    host: esxi1.local
+    datastore: Datastore1
+
+cluster:
+  master:
+    cpu: 4
+    memory: 4096
+    disk_size: 100
+    vsphere:
+      hosts:
+        - esxi1.local
+      datastores:
+        - Datastore1
+  worker:
+    cpu: 6
+    memory: 8192
+    disk_size: 250
+    vsphere:
+      hosts:
+        - esxi1.local
+        - esxi2.local
+      datastores:
+        - Datastore1
+        - Datastore2

@@ -1,0 +1,23 @@
+---
+- name: Configure Template
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Update Packages
+      ansible.builtin.package:
+        name: '*'
+        state: latest
+
+
+- name: Download RKE2 Installer
+  hosts: all
+  become: true
+  tags: rke2
+
+  tasks:
+    - name: Download RKE2 Install Script
+      ansible.builtin.get_url:
+        url: https://get.rke2.io
+        dest: /tmp/rke2_install.sh
+        mode: '0755'

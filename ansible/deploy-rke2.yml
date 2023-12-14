@@ -1,0 +1,130 @@
+---
+- name: Common Tasks
+  hosts: all
+  become: true
+  tags: common
+
+  tasks:
+    - name: Update Packages
+      ansible.builtin.dnf:
+        name: '*'
+        state: latest
+        update_cache: true
+      when: ansible_os_family == 'RedHat'
+
+    - name: Check if RKE2 Installer Exists
+      ansible.builtin.stat:
+        path: /tmp/rke2_install.sh
+      register: rke2_installer
+
+    - name: Download RKE2 Install Script
+      ansible.builtin.get_url:
+        url: https://get.rke2.io
+        dest: /tmp/rke2_install.sh
+        mode: '0755'
+      when: not rke2_installer.stat.exists
+
+
+- name: Deploy RKE2 Server
+  hosts: controlplane_master
+  become: true
+  tags: master
+
+  tasks:
+    - name: Open Firewall Ports
+      ansible.posix.firewalld:
+        port: "{{ item }}"
+        permanent: true
+        state: enabled
+        immediate: true
+      loop:
+        - 9345/tcp
+        - 6443/tcp
+
+    - name: Run RKE2 Server Install Script
+      ansible.builtin.command: /tmp/rke2_install.sh
+      args:
+        creates: /var/lib/rancher/rke2
+      register: rke2_install
+      notify:
+        - Restart RKE2 Server
+
+    - name: Flush Handlers
+      ansible.builtin.meta: flush_handlers
+      when: rke2_install is changed
+
+    - name: Register RKE2 Agent Token
+      ansible.builtin.command: cat /var/lib/rancher/rke2/server/token
+      register: rke2_agent_token
+      failed_when: false
+      changed_when: false
+
+    - name: Copy kubeconfig locally
+      ansible.builtin.fetch:
+        src: /etc/rancher/rke2/rke2.yaml
+        dest: /root/.kube/config
+        flat: true
+      when: rke2_install is changed
+
+    - name: Set Context Server IP
+      ansible.builtin.replace:
+        path: /root/.kube/config
+        regexp: 'server: https://.*'
+        replace: "server: https://{{ hostvars[groups['controlplane_master'][0]]['ansible_default_ipv4']['address'] }}:6443"
+      delegate_to: localhost
+      when: rke2_install is changed
+
+  handlers:
+    - name: Restart RKE2 Server
+      ansible.builtin.systemd:
+        name: rke2-server
+        state: restarted
+
+
+- name: Deploy RKE2 Agents
+  hosts: worker
+  become: true
+  tags: worker
+
+  tasks:
+    - name: Open Firewall Ports
+      ansible.posix.firewalld:
+        port: "{{ item }}"
+        permanent: true
+        state: enabled
+        immediate: true
+      loop:
+        - 10250/tcp
+        - 30000-32767/tcp
+
+    - name: Run RKE2 Agent Install Script
+      ansible.builtin.command: /tmp/rke2_install.sh
+      args:
+        creates: /var/lib/rancher/rke2
+      environment:
+        INSTALL_RKE2_TYPE: agent
+      register: rke2_install
+      notify:
+        - Restart RKE2 Agent
+
+    - name: Make RKE2 Agent Config Directory
+      ansible.builtin.file:
+        path: /etc/rancher/rke2
+        state: directory
+        mode: '0755'
+      when: rke2_install is changed
+
+    - name: Create RKE2 Agent Config File
+      ansible.builtin.copy:
+        dest: /etc/rancher/rke2/config.yaml
+        content: |
+          server: https://{{ hostvars[groups['controlplane_master'][0]]['ansible_default_ipv4']['address'] }}:9345
+          token: "{{ hostvars[groups['controlplane_master'][0]]['rke2_agent_token']['stdout'] }}"
+        mode: '0644'
+      when: rke2_install is changed
+
+  handlers:
+    - name: Restart RKE2 Agent
+      ansible.builtin.systemd:
+        name: rke2-agent
+        state: restarted
