@@ -3,40 +3,16 @@
 set -e
 
 
-# Function to initialize Nucleus
-initialize_nucleus() {
-    TEMPLATES_DIR="/usr/src/app/templates"
-
-    if [ ! -f .gitignore ]; then
-        cp "${TEMPLATES_DIR}/.gitignore" .
-        echo "Created .gitignore"
-    fi
-
-    if [ ! -f main.nucleus.yml ]; then
-        cp "${TEMPLATES_DIR}/template.main.nucleus.yml" main.nucleus.yml
-        echo "Created default main.nucleus.yml"
-    fi
-
-    if [ ! -f vars.nucleus.yml ]; then
-        cp "${TEMPLATES_DIR}/template.vars.nucleus.yml" vars.nucleus.yml
-        echo "Created default vars.nucleus.yml"
-    fi
-}
-
-
-if [ $1 == "init" ]; then
-    echo "Initializing Nucleus..."
-    initialize_nucleus
-    exit 0
-fi
-
-
-NUCLEUS_DATA_DIR="/usr/src/nucleus-data"
-NUCLUES_DOT_DIR="/usr/src/nucleus-data/.nucleus"
-PROJECT_NAME=$(yq ".name" /usr/src/nucleus-data/main.nucleus.yml)
-VMWARE_HOST=$(yq ".vsphere.endpoint" /usr/src/nucleus-data/main.nucleus.yml)
-VMWARE_USER=$(yq ".vsphere.username" /usr/src/nucleus-data/vars.nucleus.yml)
-VMWARE_PASSWORD=$(yq ".vsphere.password" /usr/src/nucleus-data/vars.nucleus.yml)
+WORK_DIR="/root"
+NUCLEUS_DIR="${WORK_DIR}/nucleus"
+NUCLEUS_DATA_DIR="${WORK_DIR}/nucleus-data"
+NUCLUES_DOT_DIR="${NUCLEUS_DATA_DIR}/.nucleus"
+MAIN_NUCLEUS_FILE="${NUCLEUS_DATA_DIR}/main.nucleus.yml"
+PROJECT_NAME=$(yq ".name" $MAIN_NUCLEUS_FILE)
+VMWARE_HOST=$(yq ".vsphere.endpoint" $MAIN_NUCLEUS_FILE)
+VAR_NUCLEUS_FILE="${NUCLEUS_DATA_DIR}/vars.nucleus.yml"
+VMWARE_USER=$(yq ".vsphere.username" $VAR_NUCLEUS_FILE)
+VMWARE_PASSWORD=$(yq ".vsphere.password" $VAR_NUCLEUS_FILE)
 
 
 # Function to apply Nucleus
@@ -70,7 +46,7 @@ run_terraform() {
     fi
 
     # Change to the Terraform directory
-    cd /usr/src/app/terraform
+    cd $WORK_DIR/terraform
 
     # Set your variables
     BUCKET="cdeleon-terraform-state"
@@ -96,7 +72,8 @@ run_terraform() {
 # Packer commands
 run_packer() {
     # Change to the Packer directory
-    cd /usr/src/app/packer
+    cd $WORK_DIR/packer
+
     # Execute Packer with all passed arguments
     packer "$@" \
         -force \
@@ -108,10 +85,11 @@ run_packer() {
 # Ansible commands
 run_ansible() {
     # Change to the Ansible directory
-    cd /usr/src/app/ansible
+    ANSIBLE_DIR="$WORK_DIR/ansible"
+    cd $ANSIBLE_DIR
 
     # Replace variables in the inventory file
-    INVENTORY_FILE="/usr/src/app/ansible/hosts/vmware.yml"
+    INVENTORY_FILE="${ANSIBLE_DIR}/hosts/vmware.yml"
     sed -i "s/HOSTNAME/$VMWARE_HOST/" $INVENTORY_FILE
     sed -i "s/USERNAME/$VMWARE_USER/" $INVENTORY_FILE
     sed -i "s/PASSWORD/$VMWARE_PASSWORD/" $INVENTORY_FILE
@@ -129,7 +107,7 @@ fi
 
 
 # Parse Config Files
-python /usr/src/app/nucleus/config_parser.py
+python $NUCLEUS_DIR/config_parser.py
 
 
 # Main command handling

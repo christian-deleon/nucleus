@@ -105,10 +105,10 @@ fi
 # If init is passed, run the init command
 if [ "$1" == "init" ]; then
     podman run --rm -it \
-        --network host \
-        -v "$(pwd)":/usr/src/nucleus-data \
-        -w /usr/src/nucleus-data \
-        nucleus:latest init
+        -v "$(pwd)":/root/nucleus-data \
+        -w /root/nucleus-data \
+        --entrypoint /root/nucleus/init.sh \
+        nucleus:latest
     exit 0
 fi
 
@@ -144,9 +144,10 @@ fi
 # Running the Podman Container with necessary mounts and arguments
 podman run --rm -it \
     --network host \
-    -v "$(pwd)":/usr/src/nucleus-data \
+    -v "$(pwd)":/root/nucleus-data \
     -v ~/.ssh:/root/.ssh \
     -v ~/.kube:/root/.kube \
     -v ~/.aws:/root/.aws \
-    -w /usr/src/nucleus-data \
+    -w /root/nucleus-data \
+    --entrypoint /root/nucleus/entrypoint.sh \
     $NUCLEUS_IMAGE "$@"

@@ -2,7 +2,11 @@
 FROM python:3.11.6
 
 # Set Working Directory
-WORKDIR /usr/src/app
+WORKDIR /root
+
+################################################
+# Install Dependencies
+################################################
 
 # Install Dependencies
 RUN apt-get update && \
@@ -31,35 +35,36 @@ RUN unzip /tmp/terraform_${TERRAFORM_VERSION}_linux_amd64.zip -d /usr/local/bin 
 # Install Ansible
 RUN pip install ansible==8.6.1
 
-# Copy packer files into the Container
-COPY ./packer/ /usr/src/app/packer/
-
-# Initialize Packer
-RUN packer init /usr/src/app/packer/
-
-# Copy Terraform files into the Container
-COPY ./terraform/ /usr/src/app/terraform/
-
-# Initialize Terraform
-RUN terraform -chdir=/usr/src/app/terraform init
-
 # Copy Ansible Python Requirements into the Container
-COPY ./ansible/requirements.txt /usr/src/app/ansible/
+COPY ./ansible/requirements.txt /root/ansible/
 
 # Install Ansible Python Requirements
-RUN pip install -r /usr/src/app/ansible/requirements.txt
+RUN pip install -r /root/ansible/requirements.txt
+
+################################################
+# Configure Container
+################################################
+
+# Copy packer files into the Container
+COPY ./packer/ /root/packer/
+
+# Initialize Packer
+RUN packer init /root/packer/
+
+# Copy Terraform files into the Container
+COPY ./terraform/ /root/terraform/
+
+# Initialize Terraform
+RUN terraform -chdir=/root/terraform init
 
 # Copy Ansible files into the Container
-COPY ./ansible/ /usr/src/app/ansible/
+COPY ./ansible/ /root/ansible/
 
 # Copy Templates into the Container
-COPY ./templates/ /usr/src/app/templates/
+COPY ./templates/ /root/templates/
 
-# Copy Parser into the Container
-COPY ./nucleus/config_parser.py /usr/src/app/nucleus/config_parser.py
+# Copy Nuclues files into the Container
+COPY ./nucleus/ /root/nucleus/
 
-# Add an Entry Point Script
-COPY ./nucleus/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# Make Nuclues Scripts Executable
+RUN chmod +x /root/nucleus/*.sh
