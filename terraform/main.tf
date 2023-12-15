@@ -37,6 +37,14 @@ module "k8s_cluster" {
     {
       host      = "esxi1.local"
       datastore = "host1_datastore1"
+    },
+    {
+      host      = "esxi2.local"
+      datastore = "host2_datastore1"
+    },
+    {
+      host      = "esxi3.local"
+      datastore = "host3_datastore1"
     }
   ]
 
