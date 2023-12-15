@@ -141,6 +141,19 @@ if [ ! -d ~/.kube ]; then
     mkdir ~/.kube
 fi
 
+# If command is exec, bash into the container
+if [ "$1" == "exec" ]; then
+    podman run --rm -it \
+        --network host \
+        -v "$(pwd)":/root/nucleus-data \
+        -v ~/.ssh:/root/.ssh \
+        -v ~/.kube:/root/.kube \
+        -v ~/.aws:/root/.aws \
+        --entrypoint /bin/bash \
+        $NUCLEUS_IMAGE
+    exit 0
+fi
+
 # Running the Podman Container with necessary mounts and arguments
 podman run --rm -it \
     --network host \
