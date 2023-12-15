@@ -33,7 +33,7 @@ apply_nucleus() {
     echo 
     echo "Deploying RKE2..."
     echo
-    run_ansible deploy-rke2.yml
+    run_ansible configure-k8s.yml
 }
 
 

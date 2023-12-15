@@ -1,0 +1,8 @@
+---
+- name: Configure Kubernetes
+  hosts: cluster
+  become: true
+
+  roles:
+    - role: christian_deleon.kubernetes.rke2
+      tags: rke2

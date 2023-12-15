@@ -1,0 +1,3 @@
+[submodule "ansible/collections/christian_deleon/kubernetes"]
+	path = ansible/collections/christian_deleon/kubernetes
+	url = git@gitlab.robochris.net:devops/ansible/collections/kubernetes.git

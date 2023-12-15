@@ -60,6 +60,11 @@ RUN terraform -chdir=/root/terraform init
 # Copy Ansible files into the Container
 COPY ./ansible/ /root/ansible/
 
+# Install Ansible Collections
+WORKDIR /root/ansible
+RUN ansible-galaxy collection install -r requirements.yml
+WORKDIR /root
+
 # Copy Templates into the Container
 COPY ./templates/ /root/templates/
 
